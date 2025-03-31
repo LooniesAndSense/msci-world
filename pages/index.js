@@ -5,12 +5,13 @@ import * as d3 from "d3";
 import { Switch } from "@heroui/react";
 import { Slider } from "@heroui/react";
 import { useTheme } from "next-themes";
-import { ThemeSwitch } from "@/components/theme-switch"; // Your existing component
+import { ThemeSwitch } from "../components/theme-switch"
 
 export default function Home() {
   const [data, setData] = useState([]);
   const [logScale, setLogScale] = useState(false);
   const [smoothingWindow, setSmoothingWindow] = useState(1);
+  const [showEvents, setShowEvents] = useState(true);
   const chartRef = useRef(null);
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -59,7 +60,7 @@ export default function Home() {
 
     const margin = { top: 20, right: 20, bottom: 110, left: 50 },
       margin2 = { top: 430, right: 20, bottom: 30, left: 50 },
-      width = 1500 - margin.left - margin.right,
+      width = 1600 - margin.left - margin.right,
       height = 500 - margin.top - margin.bottom,
       height2 = 500 - margin2.top - margin2.bottom;
 
@@ -72,8 +73,13 @@ export default function Home() {
       .attr("width", width + margin.left + margin.right)
       .attr("height", 500);
 
-    const focus = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-    const context = svg.append("g").attr("transform", `translate(${margin2.left},${margin2.top})`);
+    const focus = svg.append("g")
+      .attr("class", "focus")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+    
+    const context = svg.append("g")
+      .attr("class", "context")
+      .attr("transform", `translate(${margin2.left},${margin2.top})`);
 
     const x = d3.scaleTime().range([0, width]);
     const x2 = d3.scaleTime().range([0, width]);
@@ -158,11 +164,16 @@ export default function Home() {
     contextAxis.selectAll("path").attr("stroke", colors.axis);
     contextAxis.selectAll("text").attr("fill", isDarkMode ? "#ffffff" : "#000000");
 
+    // Create an event group to hold all event markers and labels
     const eventGroup = focus.append("g").attr("class", "events");
 
+    // Function to draw or update event markers
     const drawEvents = () => {
-      eventGroup.selectAll("line").remove();
-      eventGroup.selectAll("text").remove();
+      // Clear existing events
+      eventGroup.selectAll("*").remove();
+      
+      // If events are turned off, return early without drawing anything
+      if (!showEvents) return;
 
       const parseEventDate = d3.timeParse("%m/%Y");
       const events = [
@@ -213,7 +224,7 @@ export default function Home() {
         eventGroup.append("text")
           .attr("x", x(event.date))
           .attr("y", 12)
-          .attr("transform", `rotate(-85, ${x(event.date)}, 12)`)
+          .attr("transform", `rotate(-, ${x(event.date)}, 12)`)
           .text(event.label)
           .attr("fill", isDarkMode ? "#ffffff" : "#000000")
           .attr("font-size", "12px")
@@ -221,8 +232,10 @@ export default function Home() {
       });
     };
 
+    // Initial draw of events
     drawEvents();
 
+    // Create brush for the context area
     const brush = d3.brushX()
       .extent([[0, 0], [width, height2]])
       .on("brush end", event => {
@@ -372,23 +385,41 @@ export default function Home() {
 
     brushGroup.selectAll(".overlay")
       .attr("fill", "transparent");
-  }, [data, logScale, smoothingWindow, theme, resolvedTheme, mounted]);
+      
+    // Update event visibility when showEvents changes
+    if (!showEvents) {
+      eventGroup.selectAll("*").remove();
+    }
+    
+  }, [data, logScale, smoothingWindow, theme, resolvedTheme, mounted, showEvents]);
 
   return (
     <div className="p-4 space-y-4 dark:bg-gray-900 dark:text-white transition-colors">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">MSCI World Index (USD) with Major Financial Events</h2>
-        <ThemeSwitch />
+        <div className="flex items-center">
+          <ThemeSwitch className="ml-2" />
+        </div>
       </div>
       
-      <div className="flex flex-wrap items-center gap-4">
-        <Switch
-          isSelected={logScale}
-          onValueChange={setLogScale}
-          color="primary"
-        >
-          Log Scale
-        </Switch>
+      <div className="flex flex-wrap items-center gap-6">
+        <label className="flex items-center space-x-2 cursor-pointer">
+          <Switch
+            isSelected={logScale}
+            onValueChange={setLogScale}
+            color="primary"
+          />
+          <span>Log Scale</span>
+        </label>
+        
+        <label className="flex items-center space-x-2 cursor-pointer">
+          <Switch
+            isSelected={showEvents}
+            onValueChange={setShowEvents}
+            color="primary"
+          />
+          <span>Show Events</span>
+        </label>
         
         <div className="w-72">
           <Slider
