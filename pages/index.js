@@ -143,7 +143,7 @@ export default function Home() {
           .attr("y", 12)
           .attr("transform", `rotate(-65, ${x(event.date)}, 12)`)
           .text(event.label)
-          .attr("fill", "red")
+          .attr("fill", "black")
           .attr("font-size", "12px")
           .attr("text-anchor", "end");
       });
