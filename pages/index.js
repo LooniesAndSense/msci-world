@@ -205,7 +205,9 @@ export default function Home() {
       .selectAll(".handle")
       .attr("fill", "#666")
       .attr("stroke", "#333")
+      .attr("filter", "drop-shadow(0px 0px 2px #000)")
       .attr("stroke-width", 1);
+      
 
     context.select(".brush").selectAll(".overlay").attr("fill", "transparent");
   }, [data, logScale, smoothingWindow]);
