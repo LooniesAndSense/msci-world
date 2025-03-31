@@ -4,12 +4,21 @@ import { useEffect, useState, useRef } from "react";
 import * as d3 from "d3";
 import { Switch } from "@heroui/react";
 import { Slider } from "@heroui/react";
+import { useTheme } from "next-themes";
+import { ThemeSwitch } from "@/components/theme-switch"; // Your existing component
 
 export default function Home() {
   const [data, setData] = useState([]);
   const [logScale, setLogScale] = useState(false);
   const [smoothingWindow, setSmoothingWindow] = useState(1);
   const chartRef = useRef(null);
+  const { theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // After mounting, we can safely access the theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     d3.csv("/chart.csv", d => ({
@@ -31,8 +40,22 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (data.length === 0) return;
+    if (data.length === 0 || !mounted) return;
     const smoothedData = getSmoothedData();
+    const isDarkMode = resolvedTheme === 'dark';
+
+    // Define colors based on theme
+    const colors = {
+      line: isDarkMode ? '#6ab7ff' : 'steelblue',
+      axis: isDarkMode ? '#888888' : '#666666',
+      eventLine: isDarkMode ? '#ff5555' : 'red',
+      tooltipBg: isDarkMode ? '#222222' : 'white',
+      tooltipText: isDarkMode ? '#ffffff' : '#000000',
+      tooltipBorder: isDarkMode ? '#555555' : '#ccc',
+      brushFill: isDarkMode ? 'rgba(106, 183, 255, 0.3)' : 'rgba(66, 165, 245, 0.4)',
+      brushStroke: isDarkMode ? '#6ab7ff' : '#1976d2',
+      handleFill: isDarkMode ? '#6ab7ff' : '#1976d2'
+    };
 
     const margin = { top: 20, right: 20, bottom: 110, left: 50 },
       margin2 = { top: 430, right: 20, bottom: 30, left: 50 },
@@ -41,6 +64,8 @@ export default function Home() {
       height2 = 500 - margin2.top - margin2.bottom;
 
     d3.select("#chart svg").remove();
+    d3.select("#chart .tooltip").remove();
+    
     const svg = d3
       .select(chartRef.current)
       .append("svg")
@@ -69,11 +94,31 @@ export default function Home() {
       .x(d => x2(d.date))
       .y(d => y2(logScale && d.value <= 0 ? 1 : d.value));
 
+    // Add grid lines
+    focus.append("g")
+      .attr("class", "grid")
+      .attr("transform", `translate(0,${height})`)
+      .call(d3.axisBottom(x)
+        .tickSize(-height)
+        .tickFormat(""))
+      .selectAll("line")
+      .attr("stroke", isDarkMode ? "#333333" : "#eaeaea")
+      .attr("stroke-opacity", 0.6);
+
+    focus.append("g")
+      .attr("class", "grid")
+      .call(d3.axisLeft(y)
+        .tickSize(-width)
+        .tickFormat(""))
+      .selectAll("line")
+      .attr("stroke", isDarkMode ? "#333333" : "#eaeaea")
+      .attr("stroke-opacity", 0.6);
+
     const path = focus.append("path")
       .datum(smoothedData)
       .attr("class", "line")
       .attr("fill", "none")
-      .attr("stroke", "steelblue")
+      .attr("stroke", colors.line)
       .attr("stroke-width", 1.5)
       .attr("d", line);
 
@@ -82,21 +127,36 @@ export default function Home() {
       .attr("class", "x-axis")
       .call(d3.axisBottom(x));
 
+    // Style axes based on theme
+    xAxis.selectAll("line").attr("stroke", colors.axis);
+    xAxis.selectAll("path").attr("stroke", colors.axis);
+    xAxis.selectAll("text").attr("fill", isDarkMode ? "#ffffff" : "#000000");
+
     const yAxis = focus.append("g")
       .attr("class", "y-axis")
       .call(logScale ? d3.axisLeft(y).ticks(10, ".0s") : d3.axisLeft(y));
+
+    // Style axes based on theme
+    yAxis.selectAll("line").attr("stroke", colors.axis);
+    yAxis.selectAll("path").attr("stroke", colors.axis);
+    yAxis.selectAll("text").attr("fill", isDarkMode ? "#ffffff" : "#000000");
 
     context.append("path")
       .datum(smoothedData)
       .attr("class", "line")
       .attr("fill", "none")
-      .attr("stroke", "steelblue")
+      .attr("stroke", colors.line)
       .attr("stroke-width", 1)
       .attr("d", line2);
 
-    context.append("g")
+    const contextAxis = context.append("g")
       .attr("transform", `translate(0,${height2})`)
       .call(d3.axisBottom(x2));
+
+    // Style context axis based on theme
+    contextAxis.selectAll("line").attr("stroke", colors.axis);
+    contextAxis.selectAll("path").attr("stroke", colors.axis);
+    contextAxis.selectAll("text").attr("fill", isDarkMode ? "#ffffff" : "#000000");
 
     const eventGroup = focus.append("g").attr("class", "events");
 
@@ -146,16 +206,16 @@ export default function Home() {
           .attr("y1", 0)
           .attr("x2", x(event.date))
           .attr("y2", height)
-          .attr("stroke", "red")
+          .attr("stroke", colors.eventLine)
           .attr("stroke-width", 1)
           .attr("stroke-dasharray", "4");
 
         eventGroup.append("text")
           .attr("x", x(event.date))
           .attr("y", 12)
-          .attr("transform", `rotate(-, ${x(event.date)}, 12)`)
+          .attr("transform", `rotate(-85, ${x(event.date)}, 12)`)
           .text(event.label)
-          .attr("fill", "black")
+          .attr("fill", isDarkMode ? "#ffffff" : "#000000")
           .attr("font-size", "12px")
           .attr("text-anchor", "end");
       });
@@ -189,6 +249,16 @@ export default function Home() {
           path.attr("d", line);
           xAxis.call(d3.axisBottom(x));
           yAxis.call(logScale ? d3.axisLeft(y).ticks(10, ".0s") : d3.axisLeft(y));
+          
+          // Re-style the axes after update
+          xAxis.selectAll("line").attr("stroke", colors.axis);
+          xAxis.selectAll("path").attr("stroke", colors.axis);
+          xAxis.selectAll("text").attr("fill", isDarkMode ? "#ffffff" : "#000000");
+          
+          yAxis.selectAll("line").attr("stroke", colors.axis);
+          yAxis.selectAll("path").attr("stroke", colors.axis);
+          yAxis.selectAll("text").attr("fill", isDarkMode ? "#ffffff" : "#000000");
+          
           drawEvents();
         }
       });
@@ -202,8 +272,9 @@ export default function Home() {
       .append("div")
       .attr("class", "tooltip")
       .style("position", "absolute")
-      .style("background", "white")
-      .style("border", "1px solid #ccc")
+      .style("background", colors.tooltipBg)
+      .style("color", colors.tooltipText)
+      .style("border", `1px solid ${colors.tooltipBorder}`)
       .style("border-radius", "4px")
       .style("padding", "6px")
       .style("font-size", "12px")
@@ -216,7 +287,7 @@ export default function Home() {
     // Create a vertical line that follows the mouse
     const mouseLine = focus.append("line")
       .attr("class", "mouse-line")
-      .style("stroke", "#666")
+      .style("stroke", colors.axis)
       .style("stroke-width", "1px")
       .style("opacity", 0);
       
@@ -224,8 +295,8 @@ export default function Home() {
     const mouseCircle = focus.append("circle")
       .attr("class", "mouse-circle")
       .attr("r", 5)
-      .style("fill", "steelblue")
-      .style("stroke", "white")
+      .style("fill", colors.line)
+      .style("stroke", isDarkMode ? "#000000" : "#ffffff")
       .style("stroke-width", "2px")
       .style("opacity", 0);
       
@@ -290,43 +361,48 @@ export default function Home() {
       });
 
     brushGroup.selectAll(".selection")
-      .attr("fill", "#42a5f5")
-      .attr("fill-opacity", 0.4)
-      .attr("stroke", "#1976d2")
+      .attr("fill", colors.brushFill)
+      .attr("stroke", colors.brushStroke)
       .attr("stroke-width", 1);
 
     brushGroup.selectAll(".handle")
-      .attr("fill", "#1976d2")
-      .attr("stroke", "white")
+      .attr("fill", colors.handleFill)
+      .attr("stroke", isDarkMode ? "#000000" : "#ffffff")
       .attr("cursor", "ew-resize");
 
     brushGroup.selectAll(".overlay")
       .attr("fill", "transparent");
-  }, [data, logScale, smoothingWindow]);
+  }, [data, logScale, smoothingWindow, theme, resolvedTheme, mounted]);
 
   return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-xl font-semibold">MSCI World Index (USD) with Major Financial Events</h2>
-      <Switch
-        isSelected={logScale}
-        onValueChange={setLogScale}
-        color="primary"
-      >
-        Log Scale
-      </Switch>
-      <div className="w-72">
-        <Slider
-          label={`Smoothing Window: ${smoothingWindow} month${smoothingWindow > 1 ? "s" : ""}`}
-          step={1}
-          minValue={1}
-          maxValue={24}
-          value={smoothingWindow}
-          onChange={setSmoothingWindow}
-        />
+    <div className="p-4 space-y-4 dark:bg-gray-900 dark:text-white transition-colors">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">MSCI World Index (USD) with Major Financial Events</h2>
+        <ThemeSwitch />
       </div>
-      <div id="chart" ref={chartRef} className="relative mt-6" />
+      
+      <div className="flex flex-wrap items-center gap-4">
+        <Switch
+          isSelected={logScale}
+          onValueChange={setLogScale}
+          color="primary"
+        >
+          Log Scale
+        </Switch>
+        
+        <div className="w-72">
+          <Slider
+            label={`Smoothing Window: ${smoothingWindow} month${smoothingWindow > 1 ? "s" : ""}`}
+            step={1}
+            minValue={1}
+            maxValue={24}
+            value={smoothingWindow}
+            onChange={setSmoothingWindow}
+          />
+        </div>
+      </div>
+      
+      <div id="chart" ref={chartRef} className="relative mt-6 rounded-lg overflow-hidden dark:bg-gray-800 p-2 transition-colors" />
     </div>
   );
 }
-
-// Place `chart.csv` into the public/ folder so it's available at /chart.csv
