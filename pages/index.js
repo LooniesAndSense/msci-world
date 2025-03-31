@@ -131,15 +131,13 @@ export default function Home() {
         { date: "02/2024", label: "Regional Bank Selloff" },
         { date: "03/2024", label: "BoJ Ends Negative Rates" },
         { date: "04/2024", label: "Iran–Israel Tensions" },
-        { date: "05/2024", label: "Yields Spike on Fed Talk" },
+        { date: "05/2024", label: "Yields Spike on US Fed Talk" },
         { date: "06/2024", label: "Eurozone Growth Warning" },
         { date: "07/2024", label: "China Property Stimulus" },
-        { date: "08/2024", label: "Fed Pushes Back on Cuts" },
+        { date: "08/2024", label: "US Fed Pushes Back on Cuts" },
         { date: "09/2024", label: "Tech Correction Deepens" },
         { date: "10/2024", label: "Election Volatility" },
         { date: "11/2024", label: "Soft CPI, Risk-On Rally" },
-        { date: "12/2024", label: "Fed Hints at 2025 Cuts" },
-        { date: "01/2024", label: "Fed Pivot Optimism" }
       ].map(d => ({ date: parseEventDate(d.date), label: d.label }));
 
       events.forEach(event => {
@@ -155,7 +153,7 @@ export default function Home() {
         eventGroup.append("text")
           .attr("x", x(event.date))
           .attr("y", 12)
-          .attr("transform", `rotate(-80, ${x(event.date)}, 12)`)
+          .attr("transform", `rotate(-85, ${x(event.date)}, 12)`)
           .text(event.label)
           .attr("fill", "black")
           .attr("font-size", "12px")
