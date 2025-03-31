@@ -141,7 +141,7 @@ export default function Home() {
         eventGroup.append("text")
           .attr("x", x(event.date))
           .attr("y", 12)
-          .attr("transform", `rotate(-65, ${x(event.date)}, 12)`)
+          .attr("transform", `rotate(-80, ${x(event.date)}, 12)`)
           .text(event.label)
           .attr("fill", "black")
           .attr("font-size", "12px")
