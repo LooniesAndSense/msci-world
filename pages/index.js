@@ -52,13 +52,14 @@ export default function Home() {
 
     const x = d3.scaleTime().range([0, width]);
     const x2 = d3.scaleTime().range([0, width]);
-    let y = logScale ? d3.scaleLog().clamp(true).range([height, 0]) : d3.scaleLinear().range([height, 0]);
-    const y2 = logScale ? d3.scaleLog().clamp(true).range([height2, 0]) : d3.scaleLinear().range([height2, 0]);
+    const y2 = logScale ? d3.scaleSymlog().range([height2, 0]) : d3.scaleLinear().range([height2, 0]);
 
     x.domain(d3.extent(smoothedData, d => d.date));
-    y.domain(d3.extent(smoothedData, d => logScale && d.value <= 0 ? 1 : d.value));
     x2.domain(x.domain());
-    y2.domain(y.domain());
+    y2.domain(d3.extent(smoothedData, d => logScale && d.value <= 0 ? 1 : d.value));
+
+    let y = logScale ? d3.scaleSymlog().range([height, 0]) : d3.scaleLinear().range([height, 0]);
+    y.domain(d3.extent(smoothedData, d => logScale && d.value <= 0 ? 1 : d.value));
 
     const line = d3.line()
       .x(d => x(d.date))
@@ -126,6 +127,18 @@ export default function Home() {
         { date: "05/2023", label: "US Debt Ceiling Crisis" },
         { date: "10/2023", label: "Israel–Hamas War Begins" },
         { date: "11/2023", label: "AI-Led Rally Begins" },
+        { date: "01/2024", label: "Red Sea Shipping Disruptions" },
+        { date: "02/2024", label: "Regional Bank Selloff" },
+        { date: "03/2024", label: "BoJ Ends Negative Rates" },
+        { date: "04/2024", label: "Iran–Israel Tensions" },
+        { date: "05/2024", label: "Yields Spike on Fed Talk" },
+        { date: "06/2024", label: "Eurozone Growth Warning" },
+        { date: "07/2024", label: "China Property Stimulus" },
+        { date: "08/2024", label: "Fed Pushes Back on Cuts" },
+        { date: "09/2024", label: "Tech Correction Deepens" },
+        { date: "10/2024", label: "Election Volatility" },
+        { date: "11/2024", label: "Soft CPI, Risk-On Rally" },
+        { date: "12/2024", label: "Fed Hints at 2025 Cuts" },
         { date: "01/2024", label: "Fed Pivot Optimism" }
       ].map(d => ({ date: parseEventDate(d.date), label: d.label }));
 
@@ -142,9 +155,9 @@ export default function Home() {
         eventGroup.append("text")
           .attr("x", x(event.date))
           .attr("y", 12)
-          .attr("transform", `rotate(-65, ${x(event.date)}, 12)`)
+          .attr("transform", `rotate(-80, ${x(event.date)}, 12)`)
           .text(event.label)
-          .attr("fill", "red")
+          .attr("fill", "black")
           .attr("font-size", "12px")
           .attr("text-anchor", "end");
       });
@@ -160,12 +173,19 @@ export default function Home() {
           const [x0, x1] = selection.map(x2.invert);
           x.domain([x0, x1]);
 
-          // adjust y scale to match new x domain range
           const filtered = smoothedData.filter(d => d.date >= x0 && d.date <= x1);
-          const newY = logScale ? d3.scaleLog().clamp(true).range([height, 0]) : d3.scaleLinear().range([height, 0]);
-          newY.domain(d3.extent(filtered, d => logScale && d.value <= 0 ? 1 : d.value));
+          let newY;
+          if (logScale) {
+            const min = d3.min(filtered, d => d.value <= 0 ? 1 : d.value);
+            const max = d3.max(filtered, d => d.value);
+            const ySpan = max / min;
+            newY = ySpan < 1.3
+              ? d3.scaleLinear().range([height, 0]).domain([min, max])
+              : d3.scaleSymlog().range([height, 0]).domain([min, max]);
+          } else {
+            newY = d3.scaleLinear().range([height, 0]).domain(d3.extent(filtered, d => d.value));
+          }
           y = newY;
-
           line.y(d => y(logScale && d.value <= 0 ? 1 : d.value));
 
           path.attr("d", line);
@@ -175,10 +195,24 @@ export default function Home() {
         }
       });
 
-    context.append("g")
+    const brushGroup = context.append("g")
       .attr("class", "brush")
       .call(brush)
       .call(brush.move, x.range());
+
+    brushGroup.selectAll(".selection")
+      .attr("fill", "#42a5f5")
+      .attr("fill-opacity", 0.4)
+      .attr("stroke", "#1976d2")
+      .attr("stroke-width", 1);
+
+    brushGroup.selectAll(".handle")
+      .attr("fill", "#1976d2")
+      .attr("stroke", "white")
+      .attr("cursor", "ew-resize");
+
+    brushGroup.selectAll(".overlay")
+      .attr("fill", "transparent");
   }, [data, logScale, smoothingWindow]);
 
   return (
