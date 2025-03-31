@@ -153,7 +153,7 @@ export default function Home() {
         eventGroup.append("text")
           .attr("x", x(event.date))
           .attr("y", 12)
-          .attr("transform", `rotate(-85, ${x(event.date)}, 12)`)
+          .attr("transform", `rotate(-, ${x(event.date)}, 12)`)
           .text(event.label)
           .attr("fill", "black")
           .attr("font-size", "12px")
@@ -197,6 +197,97 @@ export default function Home() {
       .attr("class", "brush")
       .call(brush)
       .call(brush.move, x.range());
+
+    const tooltip = d3.select("#chart")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "white")
+      .style("border", "1px solid #ccc")
+      .style("border-radius", "4px")
+      .style("padding", "6px")
+      .style("font-size", "12px")
+      .style("pointer-events", "none")
+      .style("opacity", 0)
+      .style("z-index", 10);
+
+    const bisectDate = d3.bisector(d => d.date).left;
+    
+    // Create a vertical line that follows the mouse
+    const mouseLine = focus.append("line")
+      .attr("class", "mouse-line")
+      .style("stroke", "#666")
+      .style("stroke-width", "1px")
+      .style("opacity", 0);
+      
+    // Create a circle that follows the data point
+    const mouseCircle = focus.append("circle")
+      .attr("class", "mouse-circle")
+      .attr("r", 5)
+      .style("fill", "steelblue")
+      .style("stroke", "white")
+      .style("stroke-width", "2px")
+      .style("opacity", 0);
+      
+    // Add the overlay rect for mouse tracking
+    const overlay = focus.append("rect")
+      .attr("class", "overlay")
+      .attr("width", width)
+      .attr("height", height)
+      .style("fill", "none")
+      .style("pointer-events", "all")
+      .on("mouseover", function() {
+        tooltip.style("opacity", 1);
+        mouseLine.style("opacity", 1);
+        mouseCircle.style("opacity", 1);
+      })
+      .on("mouseout", function() {
+        tooltip.style("opacity", 0);
+        mouseLine.style("opacity", 0);
+        mouseCircle.style("opacity", 0);
+      })
+      .on("mousemove", function(event) {
+        // Get mouse position
+        const [xPos] = d3.pointer(event, this);
+        const x0 = x.invert(xPos);
+        const i = bisectDate(smoothedData, x0, 1);
+        
+        if (i >= smoothedData.length) return;
+        
+        // Find the closest data point
+        const d0 = i > 0 ? smoothedData[i - 1] : smoothedData[0];
+        const d1 = smoothedData[i];
+        const d = x0 - d0.date > d1.date - x0 ? d1 : d0;
+        
+        // Calculate total return since beginning of data period
+        const firstDataPoint = smoothedData[0];
+        const totalReturn = ((d.value - firstDataPoint.value) / firstDataPoint.value) * 100;
+        
+        // Format date, value and total return for tooltip
+        const formatDate = d3.timeFormat("%B %Y");
+        const formatValue = d3.format(",.2f");
+        const formatPercent = d3.format("+,.2f");
+        
+        // Position the tooltip
+        tooltip
+          .html(`<strong>Date:</strong> ${formatDate(d.date)}<br>
+                 <strong>Value:</strong> ${formatValue(d.value)}<br>
+                 <strong>Total Return:</strong> ${formatPercent(totalReturn)}%`)
+          .style("left", (x(d.date) + margin.left + 10) + "px")
+          .style("top", (y(d.value) + margin.top - 30) + "px");
+        
+        // Position the vertical line
+        mouseLine
+          .attr("x1", x(d.date))
+          .attr("y1", 0)
+          .attr("x2", x(d.date))
+          .attr("y2", height);
+          
+        // Position the circle
+        mouseCircle
+          .attr("cx", x(d.date))
+          .attr("cy", y(d.value));
+      });
 
     brushGroup.selectAll(".selection")
       .attr("fill", "#42a5f5")
