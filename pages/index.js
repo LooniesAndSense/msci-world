@@ -396,7 +396,7 @@ export default function Home() {
   return (
     <div className="p-4 space-y-4 dark:bg-gray-900 dark:text-white transition-colors">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">MSCI World Index (USD) with Major Financial Events</h2>
+        <h2 className="text-xl font-semibold">Tune Out the Noise: MSCI World Index (USD) with Major Financial Events</h2>
         {/* Uncomment when theme switch is properly configured */}
         <div className="flex items-center">
           <ThemeSwitch className="ml-2" />
