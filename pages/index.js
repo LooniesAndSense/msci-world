@@ -12,9 +12,9 @@ export default function Home() {
   const chartRef = useRef(null);
 
   useEffect(() => {
-    d3.csv("/chart.csv", (d) => ({
+    d3.csv("/chart.csv", d => ({
       date: d3.timeParse("%m/%Y")(d.Date),
-      value: +d["MSCI World"],
+      value: +d["MSCI World"]
     })).then(setData);
   }, []);
 
@@ -24,7 +24,7 @@ export default function Home() {
     for (let i = 0; i < data.length; i++) {
       const start = Math.max(0, i - smoothingWindow + 1);
       const slice = data.slice(start, i + 1);
-      const avg = d3.mean(slice, (d) => d.value);
+      const avg = d3.mean(slice, d => d.value);
       smoothed.push({ date: data[i].date, value: avg });
     }
     return smoothed;
@@ -36,7 +36,7 @@ export default function Home() {
 
     const margin = { top: 20, right: 20, bottom: 110, left: 50 },
       margin2 = { top: 430, right: 20, bottom: 30, left: 50 },
-      width = 1500 - margin.left - margin.right,
+      width = 1000 - margin.left - margin.right,
       height = 500 - margin.top - margin.bottom,
       height2 = 500 - margin2.top - margin2.bottom;
 
@@ -47,41 +47,28 @@ export default function Home() {
       .attr("width", width + margin.left + margin.right)
       .attr("height", 500);
 
-    const focus = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-    const context = svg
-      .append("g")
-      .attr("transform", `translate(${margin2.left},${margin2.top})`);
+    const focus = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    const context = svg.append("g").attr("transform", `translate(${margin2.left},${margin2.top})`);
 
     const x = d3.scaleTime().range([0, width]);
     const x2 = d3.scaleTime().range([0, width]);
-    const y = logScale
-      ? d3.scaleLog().clamp(true).range([height, 0])
-      : d3.scaleLinear().range([height, 0]);
-    const y2 = logScale
-      ? d3.scaleLog().clamp(true).range([height2, 0])
-      : d3.scaleLinear().range([height2, 0]);
+    let y = logScale ? d3.scaleLog().clamp(true).range([height, 0]) : d3.scaleLinear().range([height, 0]);
+    const y2 = logScale ? d3.scaleLog().clamp(true).range([height2, 0]) : d3.scaleLinear().range([height2, 0]);
 
-    x.domain(d3.extent(smoothedData, (d) => d.date));
-    y.domain(
-      d3.extent(smoothedData, (d) => (logScale && d.value <= 0 ? 1 : d.value))
-    );
+    x.domain(d3.extent(smoothedData, d => d.date));
+    y.domain(d3.extent(smoothedData, d => logScale && d.value <= 0 ? 1 : d.value));
     x2.domain(x.domain());
     y2.domain(y.domain());
 
-    const line = d3
-      .line()
-      .x((d) => x(d.date))
-      .y((d) => y(logScale && d.value <= 0 ? 1 : d.value));
+    const line = d3.line()
+      .x(d => x(d.date))
+      .y(d => y(logScale && d.value <= 0 ? 1 : d.value));
 
-    const line2 = d3
-      .line()
-      .x((d) => x2(d.date))
-      .y((d) => y2(logScale && d.value <= 0 ? 1 : d.value));
+    const line2 = d3.line()
+      .x(d => x2(d.date))
+      .y(d => y2(logScale && d.value <= 0 ? 1 : d.value));
 
-    focus
-      .append("path")
+    const path = focus.append("path")
       .datum(smoothedData)
       .attr("class", "line")
       .attr("fill", "none")
@@ -89,18 +76,16 @@ export default function Home() {
       .attr("stroke-width", 1.5)
       .attr("d", line);
 
-    focus
-      .append("g")
+    const xAxis = focus.append("g")
       .attr("transform", `translate(0,${height})`)
       .attr("class", "x-axis")
       .call(d3.axisBottom(x));
 
-    focus
-      .append("g")
+    const yAxis = focus.append("g")
+      .attr("class", "y-axis")
       .call(logScale ? d3.axisLeft(y).ticks(10, ".0s") : d3.axisLeft(y));
 
-    context
-      .append("path")
+    context.append("path")
       .datum(smoothedData)
       .attr("class", "line")
       .attr("fill", "none")
@@ -108,8 +93,7 @@ export default function Home() {
       .attr("stroke-width", 1)
       .attr("d", line2);
 
-    context
-      .append("g")
+    context.append("g")
       .attr("transform", `translate(0,${height2})`)
       .call(d3.axisBottom(x2));
 
@@ -142,12 +126,11 @@ export default function Home() {
         { date: "05/2023", label: "US Debt Ceiling Crisis" },
         { date: "10/2023", label: "Israel–Hamas War Begins" },
         { date: "11/2023", label: "AI-Led Rally Begins" },
-        { date: "01/2024", label: "Fed Pivot Optimism" },
-      ].map((d) => ({ date: parseEventDate(d.date), label: d.label }));
+        { date: "01/2024", label: "Fed Pivot Optimism" }
+      ].map(d => ({ date: parseEventDate(d.date), label: d.label }));
 
-      events.forEach((event) => {
-        eventGroup
-          .append("line")
+      events.forEach(event => {
+        eventGroup.append("line")
           .attr("x1", x(event.date))
           .attr("y1", 0)
           .attr("x2", x(event.date))
@@ -156,13 +139,12 @@ export default function Home() {
           .attr("stroke-width", 1)
           .attr("stroke-dasharray", "4");
 
-        eventGroup
-          .append("text")
+        eventGroup.append("text")
           .attr("x", x(event.date))
           .attr("y", 12)
-          .attr("transform", `rotate(-80, ${x(event.date)}, 12)`)
+          .attr("transform", `rotate(-65, ${x(event.date)}, 12)`)
           .text(event.label)
-          .attr("fill", "black")
+          .attr("fill", "red")
           .attr("font-size", "12px")
           .attr("text-anchor", "end");
       });
@@ -170,59 +152,48 @@ export default function Home() {
 
     drawEvents();
 
-    const brush = d3
-      .brushX()
-      .extent([
-        [0, 0],
-        [width, height2],
-      ])
-      .on("brush end", (event) => {
+    const brush = d3.brushX()
+      .extent([[0, 0], [width, height2]])
+      .on("brush end", event => {
         const selection = event.selection;
         if (selection) {
           const [x0, x1] = selection.map(x2.invert);
           x.domain([x0, x1]);
-          focus.selectAll(".line").attr("d", line);
-          focus.select(".x-axis").call(d3.axisBottom(x));
+
+          // adjust y scale to match new x domain range
+          const filtered = smoothedData.filter(d => d.date >= x0 && d.date <= x1);
+          const newY = logScale ? d3.scaleLog().clamp(true).range([height, 0]) : d3.scaleLinear().range([height, 0]);
+          newY.domain(d3.extent(filtered, d => logScale && d.value <= 0 ? 1 : d.value));
+          y = newY;
+
+          line.y(d => y(logScale && d.value <= 0 ? 1 : d.value));
+
+          path.attr("d", line);
+          xAxis.call(d3.axisBottom(x));
+          yAxis.call(logScale ? d3.axisLeft(y).ticks(10, ".0s") : d3.axisLeft(y));
           drawEvents();
         }
       });
 
-    context
-      .append("g")
+    context.append("g")
       .attr("class", "brush")
       .call(brush)
       .call(brush.move, x.range());
-    context
-      .select(".brush")
-      .selectAll(".selection")
-      .attr("stroke", "#999")
-      .attr("stroke-width", 1)
-      .attr("fill", "#999")
-      .attr("fill-opacity", 0.3);
-
-    context
-      .select(".brush")
-      .selectAll(".handle")
-      .attr("fill", "#666")
-      .attr("stroke", "#333")
-      .attr("filter", "drop-shadow(0px 0px 2px #000)")
-      .attr("stroke-width", 1);
-      
-
-    context.select(".brush").selectAll(".overlay").attr("fill", "transparent");
   }, [data, logScale, smoothingWindow]);
 
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-xl font-semibold">
-        MSCI World Index (USD) with Major Financial Events
-      </h2>
-      <Switch isSelected={logScale} onValueChange={setLogScale} color="primary">
+      <h2 className="text-xl font-semibold">MSCI World Index (USD) with Major Financial Events</h2>
+      <Switch
+        isSelected={logScale}
+        onValueChange={setLogScale}
+        color="primary"
+      >
         Log Scale
       </Switch>
       <div className="w-72">
         <Slider
-          label="Smoothing Window (months)"
+          label={`Smoothing Window: ${smoothingWindow} month${smoothingWindow > 1 ? "s" : ""}`}
           step={1}
           minValue={1}
           maxValue={24}
