@@ -60,7 +60,7 @@ export default function Home() {
 
     const margin = { top: 20, right: 20, bottom: 110, left: 50 },
       margin2 = { top: 430, right: 20, bottom: 30, left: 50 },
-      width = 1600 - margin.left - margin.right,
+      width = 1000 - margin.left - margin.right,
       height = 500 - margin.top - margin.bottom,
       height2 = 500 - margin2.top - margin2.bottom;
 
@@ -397,29 +397,38 @@ export default function Home() {
     <div className="p-4 space-y-4 dark:bg-gray-900 dark:text-white transition-colors">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">MSCI World Index (USD) with Major Financial Events</h2>
+        {/* Uncomment when theme switch is properly configured */}
         <div className="flex items-center">
           <ThemeSwitch className="ml-2" />
         </div>
       </div>
       
       <div className="flex flex-wrap items-center gap-6">
-        <label className="flex items-center space-x-2 cursor-pointer">
+        <div className="flex items-center space-x-2">
           <Switch
+            id="log-scale-switch"
             isSelected={logScale}
             onValueChange={setLogScale}
             color="primary"
+            aria-label="Toggle logarithmic scale"
           />
-          <span>Log Scale</span>
-        </label>
+          <label htmlFor="log-scale-switch" className="cursor-pointer">
+            Log Scale
+          </label>
+        </div>
         
-        <label className="flex items-center space-x-2 cursor-pointer">
+        <div className="flex items-center space-x-2">
           <Switch
+            id="show-events-switch"
             isSelected={showEvents}
             onValueChange={setShowEvents}
             color="primary"
+            aria-label="Toggle event markers"
           />
-          <span>Show Events</span>
-        </label>
+          <label htmlFor="show-events-switch" className="cursor-pointer">
+            Show Events
+          </label>
+        </div>
         
         <div className="w-72">
           <Slider
