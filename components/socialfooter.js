@@ -1,14 +1,23 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 
 // Create a reusable SVG icon component
 const SocialIcon = ({ path, color, size = 24, url, name, darkModeColor }) => {
-  const { theme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
+  // After mounting, we can access the theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Determine which color to use based on theme
-  const iconColor = theme === "dark" && darkModeColor ? darkModeColor : color;
+  // Use resolvedTheme which gives the actual theme even if set to 'system'
+  // Only render the correct color after mounting to prevent flash
+  const iconColor = !mounted ? color : 
+    (resolvedTheme === "dark" && darkModeColor) ? darkModeColor : color;
   
   return (
     <a
@@ -32,6 +41,14 @@ const SocialIcon = ({ path, color, size = 24, url, name, darkModeColor }) => {
 };
 
 const SocialIconsFooter = () => {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
+  // After mounting, we can safely show the UI
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   const socialIcons = [
     {
       name: "X",
@@ -67,6 +84,13 @@ const SocialIconsFooter = () => {
     },
   ];
 
+  // Don't render until we're mounted to prevent flash of wrong theme
+  if (!mounted) {
+    return <div className="flex gap-6 justify-center h-6">
+      {/* Placeholder with same height */}
+    </div>;
+  }
+  
   return (
     <div className="flex gap-6 justify-center">
       {socialIcons.map((icon) => (
