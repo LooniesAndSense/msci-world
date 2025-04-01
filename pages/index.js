@@ -7,6 +7,7 @@ import { Slider } from "@heroui/react";
 import { useTheme } from "next-themes";
 import { Checkbox } from "@heroui/react";
 import { ThemeSwitch } from "../components/theme-switch"
+import SocialIconsFooter from "../components/socialfooter";
 
 // Define major events for easy filtering
 const MAJOR_EVENTS = {
@@ -45,10 +46,12 @@ export default function Home() {
 
   // Handle changes to event filter checkboxes
   const handleEventFilterChange = (eventKey) => {
+    setShowEvents(true);
     setEventFilters(prev => ({
       ...prev,
       [eventKey]: !prev[eventKey]
     }));
+    
   };
 
   const getSmoothedData = () => {
@@ -617,6 +620,8 @@ export default function Home() {
       </div>
       
       <div id="chart" ref={chartRef} className="relative mt-6 rounded-lg overflow-hidden dark:bg-gray-800 p-2 transition-colors" />
+      <SocialIconsFooter />
+
     </div>
   );
 }
