@@ -19,7 +19,7 @@ export default function Home() {
   const [data, setData] = useState([]);
   const [logScale, setLogScale] = useState(false);
   const [smoothingWindow, setSmoothingWindow] = useState(1);
-  const [showEvents, setShowEvents] = useState(true);
+  const [showEvents, setShowEvents] = useState(false);
   // Event filter state - when any of these are true, we'll only show that specific event
   const [eventFilters, setEventFilters] = useState({
     [MAJOR_EVENTS.SHOW_ONLY_BLACK_MONDAY]: false,
