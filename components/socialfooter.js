@@ -7,18 +7,21 @@ import { useTheme } from "next-themes";
 const SocialIcon = ({ path, color, size = 24, url, name, darkModeColor }) => {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  
+
   // After mounting, we can access the theme
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   // Determine which color to use based on theme
   // Use resolvedTheme which gives the actual theme even if set to 'system'
   // Only render the correct color after mounting to prevent flash
-  const iconColor = !mounted ? color : 
-    (resolvedTheme === "dark" && darkModeColor) ? darkModeColor : color;
-  
+  const iconColor = !mounted
+    ? color
+    : resolvedTheme === "dark" && darkModeColor
+      ? darkModeColor
+      : color;
+
   return (
     <a
       href={url}
@@ -43,12 +46,12 @@ const SocialIcon = ({ path, color, size = 24, url, name, darkModeColor }) => {
 const SocialIconsFooter = () => {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  
+
   // After mounting, we can safely show the UI
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   const socialIcons = [
     {
       name: "X",
@@ -86,25 +89,32 @@ const SocialIconsFooter = () => {
 
   // Don't render until we're mounted to prevent flash of wrong theme
   if (!mounted) {
-    return <div className="flex gap-6 justify-center h-6">
-      {/* Placeholder with same height */}
-    </div>;
+    return (
+      <div className="flex gap-6 justify-center h-6">
+        {/* Placeholder with same height */}
+      </div>
+    );
   }
-  
+
   return (
-    <div className="flex gap-6 justify-center">
-      {socialIcons.map((icon) => (
-        <SocialIcon
-          key={icon.name}
-          path={icon.path}
-          color={icon.color}
-          darkModeColor={icon.darkModeColor}
-          url={icon.url}
-          name={icon.name}
-          size={18}
-        />
-      ))}
-    </div>
+<div className="flex flex-col items-center">
+  <div className="flex gap-6 justify-center">
+    {socialIcons.map((icon) => (
+      <SocialIcon
+        key={icon.name}
+        path={icon.path}
+        color={icon.color}
+        darkModeColor={icon.darkModeColor}
+        url={icon.url}
+        name={icon.name}
+        size={18}
+      />
+    ))}
+  </div>
+  <div className="mt-2 text-xs text-gray-500">
+    &copy; 2025 Loonies and Sense. Read the blog <b><a href="https://looniesandsense.com">here</a></b>.
+  </div>
+</div>
   );
 };
 
