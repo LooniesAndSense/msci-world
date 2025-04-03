@@ -802,7 +802,7 @@ export default function Home() {
 
       {/* CAGR Information Box - Based on Selected Period */}
       {selectedPeriodData && (
-        <div className="p-4 border rounded-lg bg-blue-50 dark:bg-gray-800 dark:border-gray-700 border-blue-200 mb-4">
+        <div className="p-4 border rounded-lg bg-blue-50 dark:bg-gray-50 dark:border-gray-700 border-blue-200 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-300">CAGR</p>
