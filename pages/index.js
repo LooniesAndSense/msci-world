@@ -21,6 +21,7 @@ export default function Home() {
   const [logScale, setLogScale] = useState(false);
   const [smoothingWindow, setSmoothingWindow] = useState(1);
   const [showEvents, setShowEvents] = useState(false);
+  const [showTrendline, setShowTrendline] = useState(true);
   // Event filter state - when any of these are true, we'll only show that specific event
   const [eventFilters, setEventFilters] = useState({
     [MAJOR_EVENTS.SHOW_ONLY_BLACK_MONDAY]: false,
@@ -66,6 +67,45 @@ export default function Home() {
     return smoothed;
   };
 
+  // Function to calculate linear regression
+  const calculateTrendline = (data) => {
+    // For log scale, we use log of values
+    const xValues = data.map((d, i) => i); // Use index as x value for simplicity
+    const yValues = logScale 
+      ? data.map(d => Math.log(Math.max(d.value, 1))) 
+      : data.map(d => d.value);
+    
+    // Calculate means
+    const xMean = d3.mean(xValues);
+    const yMean = d3.mean(yValues);
+    
+    // Calculate coefficients
+    let numerator = 0;
+    let denominator = 0;
+    
+    for (let i = 0; i < data.length; i++) {
+      numerator += (xValues[i] - xMean) * (yValues[i] - yMean);
+      denominator += Math.pow(xValues[i] - xMean, 2);
+    }
+    
+    const slope = numerator / denominator;
+    const intercept = yMean - slope * xMean;
+    
+    // Generate points for the trendline
+    const trendData = data.map((d, i) => {
+      const yPredicted = logScale
+        ? Math.exp(slope * i + intercept)
+        : slope * i + intercept;
+      
+      return {
+        date: d.date,
+        value: yPredicted
+      };
+    });
+    
+    return trendData;
+  };
+
   useEffect(() => {
     if (data.length === 0 || !mounted) return;
     const smoothedData = getSmoothedData();
@@ -82,7 +122,8 @@ export default function Home() {
       brushFill: isDarkMode ? 'rgba(106, 183, 255, 0.3)' : 'rgba(66, 165, 245, 0.4)',
       brushStroke: isDarkMode ? '#6ab7ff' : '#1976d2',
       handleFill: isDarkMode ? '#6ab7ff' : '#1976d2',
-      gridLine: isDarkMode ? "#333333" : "#eaeaea"
+      gridLine: isDarkMode ? "#333333" : "#eaeaea",
+      trendline: isDarkMode ? '#ff9f43' : '#ff6b01' // Orange/amber color for trendline
     };
 
     const margin = { top: 20, right: 30, bottom: 110, left: 50 },
@@ -187,6 +228,33 @@ export default function Home() {
       .attr("stroke-width", 2)
       .attr("d", line);
 
+    // Calculate and add trendline if log scale is enabled
+    let trendData;
+    if (logScale && showTrendline) {
+      trendData = calculateTrendline(smoothedData);
+      
+      focus.append("path")
+        .datum(trendData)
+        .attr("class", "trendline")
+        .attr("clip-path", "url(#clip)")
+        .attr("fill", "none")
+        .attr("stroke", colors.trendline)
+        .attr("stroke-width", 2.5)
+        .attr("stroke-dasharray", "6,3")
+        .attr("d", line);
+        
+      // Add trendline to context chart as well
+      context.append("path")
+        .datum(trendData)
+        .attr("class", "trendline")
+        .attr("clip-path", "url(#clip-context)")
+        .attr("fill", "none")
+        .attr("stroke", colors.trendline)
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "4,2")
+        .attr("d", line2);
+    }
+
     // Add x-axis
     const xAxis = focus.append("g")
       .attr("transform", `translate(0,${height})`)
@@ -248,6 +316,25 @@ export default function Home() {
       .text("MSCI World USD")
       .style("font-size", "10px")
       .style("fill", isDarkMode ? "#ffffff" : "#000000");
+      
+    // Add trendline to legend if it exists
+    if (logScale && showTrendline && trendData) {
+      legend.append("line")
+        .attr("x1", 0)
+        .attr("y1", 10)
+        .attr("x2", 20)
+        .attr("y2", 10)
+        .style("stroke", colors.trendline)
+        .style("stroke-width", 2)
+        .style("stroke-dasharray", "6,3");
+
+      legend.append("text")
+        .attr("x", 25)
+        .attr("y", 14)
+        .text("Long-term Trend")
+        .style("font-size", "10px")
+        .style("fill", isDarkMode ? "#ffffff" : "#000000");
+    }
 
     // Create an event group to hold all event markers and labels
     const eventGroup = focus.append("g")
@@ -381,6 +468,12 @@ export default function Home() {
       y = newY;
       line.y(d => y(logScale && d.value <= 0 ? 1 : d.value));
       path.attr("d", line);
+      
+      // Update trendline if it exists
+      if (logScale && showTrendline) {
+        const filteredTrend = calculateTrendline(filtered);
+        focus.select(".trendline").datum(filteredTrend).attr("d", line);
+      }
       
       // Update axes
       xAxis.call(d3.axisBottom(x));
@@ -528,7 +621,7 @@ export default function Home() {
     brushGroup.selectAll(".overlay")
       .attr("fill", "transparent");
       
-  }, [data, logScale, smoothingWindow, theme, resolvedTheme, mounted, showEvents, eventFilters]);
+  }, [data, logScale, smoothingWindow, theme, resolvedTheme, mounted, showEvents, eventFilters, showTrendline]);
 
   return (
     <div className="p-4 space-y-4 dark:bg-gray-900 dark:text-white transition-colors">
@@ -573,6 +666,19 @@ export default function Home() {
             value={smoothingWindow}
             onChange={setSmoothingWindow}
           />
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="show-trendline-switch"
+            isSelected={showTrendline}
+            onValueChange={setShowTrendline}
+            color="primary"
+            aria-label="Toggle trendline"
+          />
+          <label htmlFor="show-trendline-switch" className="cursor-pointer">
+            {logScale ? "Show Trendline" : "Show Trendline (enable log scale)"}
+          </label>
         </div>
       </div>
       
