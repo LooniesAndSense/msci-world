@@ -6,6 +6,8 @@ import { Switch } from "@heroui/react";
 import { Slider } from "@heroui/react";
 import { useTheme } from "next-themes";
 import { Checkbox } from "@heroui/react";
+import { Card, CardBody, CardHeader } from "@heroui/react";
+
 import { ThemeSwitch } from "../components/theme-switch";
 import SocialIconsFooter from "../components/socialfooter";
 
@@ -792,7 +794,7 @@ export default function Home() {
   ]);
 
   return (
-    <div className="p-4 space-y-4 dark:bg-gray-900 dark:text-white transition-colors">
+    <div className="p-4 space-y-4 dark:bg-gray-50 dark:text-white transition-colors">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">
           Tune Out the Noise: How Do World Events Affect the Stock Market?
@@ -800,45 +802,43 @@ export default function Home() {
         <ThemeSwitch />
       </div>
 
-      {/* CAGR Information Box - Based on Selected Period */}
-      {selectedPeriodData && (
-        <div className="p-4 border rounded-lg bg-blue-50 dark:bg-gray-50 dark:border-gray-700 border-blue-200 mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">CAGR</p>
-              <p className="text-2xl font-bold">
-                {selectedPeriodData.cagr.toFixed(2)}%
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {d3.timeFormat("%b %Y")(selectedPeriodData.startDate)} -{" "}
-                {d3.timeFormat("%b %Y")(selectedPeriodData.endDate)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Time Period
-              </p>
-              <p className="text-2xl font-bold">
-                {selectedPeriodData.years.toFixed(1)} years
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Total Return
-              </p>
-              <p className="text-2xl font-bold">
-                {(
-                  (selectedPeriodData.endValue / selectedPeriodData.startValue -
-                    1) *
-                  100
-                ).toFixed(1)}
-                %
-              </p>
-            </div>
-          </div>
+{/* CAGR Information Box using NextUI Card */}
+{selectedPeriodData && (
+  <Card className="mb-4 dark:bg-zinc-50">
+    <CardBody>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <p className="text-sm text-default-500">CAGR</p>
+          <p className="text-2xl font-bold">
+            {selectedPeriodData.cagr.toFixed(2)}%
+          </p>
+          <p className="text-xs text-default-400">
+            {d3.timeFormat("%b %Y")(selectedPeriodData.startDate)} -{" "}
+            {d3.timeFormat("%b %Y")(selectedPeriodData.endDate)}
+          </p>
         </div>
-      )}
-
+        <div>
+          <p className="text-sm text-default-500">
+            Time Period
+          </p>
+          <p className="text-2xl font-bold">
+            {selectedPeriodData.years.toFixed(1)} years
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-default-500">
+            Total Return
+          </p>
+          <p className="text-2xl font-bold">
+            {(
+              (selectedPeriodData.endValue / selectedPeriodData.startValue - 1) * 100
+            ).toFixed(1)}%
+          </p>
+        </div>
+      </div>
+    </CardBody>
+  </Card>
+)}
       <div className="flex flex-wrap items-center gap-6">
         <div className="flex items-center space-x-2">
           <Switch
