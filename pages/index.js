@@ -6,7 +6,7 @@ import { Switch } from "@heroui/react";
 import { Slider } from "@heroui/react";
 import { useTheme } from "next-themes";
 import { Checkbox } from "@heroui/react";
-import { ThemeSwitch } from "../components/theme-switch"
+import { ThemeSwitch } from "../components/theme-switch";
 import SocialIconsFooter from "../components/socialfooter";
 
 // Define major events for easy filtering
@@ -22,6 +22,8 @@ export default function Home() {
   const [smoothingWindow, setSmoothingWindow] = useState(1);
   const [showEvents, setShowEvents] = useState(false);
   const [showTrendline, setShowTrendline] = useState(true);
+  // State for selected period CAGR data
+  const [selectedPeriodData, setSelectedPeriodData] = useState(null);
   // Event filter state - when any of these are true, we'll only show that specific event
   const [eventFilters, setEventFilters] = useState({
     [MAJOR_EVENTS.SHOW_ONLY_BLACK_MONDAY]: false,
@@ -32,29 +34,36 @@ export default function Home() {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // After mounting, we can safely access the theme
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Load MSCI World Index data
-  useEffect(() => {
-    d3.csv("/chart.csv", d => ({
-      date: d3.timeParse("%m/%Y")(d.Date),
-      value: +d["MSCI World"]
-    })).then(setData);
-  }, []);
-
-  // Handle changes to event filter checkboxes
-  const handleEventFilterChange = (eventKey) => {
-    setShowEvents(true);
-    setEventFilters(prev => ({
-      ...prev,
-      [eventKey]: !prev[eventKey]
-    }));
+  // Function to calculate CAGR from the data
+  const calculateCAGR = (data) => {
+    if (!data || data.length < 2) return null;
     
+    // Get first and last data points
+    const firstDataPoint = data[0];
+    const lastDataPoint = data[data.length - 1];
+    
+    // Calculate time difference in years
+    const yearStart = firstDataPoint.date.getFullYear();
+    const monthStart = firstDataPoint.date.getMonth();
+    const yearEnd = lastDataPoint.date.getFullYear();
+    const monthEnd = lastDataPoint.date.getMonth();
+    
+    const yearDiff = yearEnd - yearStart + (monthEnd - monthStart) / 12;
+    
+    // Calculate CAGR
+    const cagr = (Math.pow(lastDataPoint.value / firstDataPoint.value, 1 / yearDiff) - 1) * 100;
+    
+    return {
+      cagr,
+      startDate: firstDataPoint.date,
+      endDate: lastDataPoint.date,
+      startValue: firstDataPoint.value,
+      endValue: lastDataPoint.value,
+      years: yearDiff
+    };
   };
 
+  // Get smoothed data for the chart
   const getSmoothedData = () => {
     if (smoothingWindow <= 1) return data;
     const smoothed = [];
@@ -105,6 +114,37 @@ export default function Home() {
     
     return trendData;
   };
+
+  // Handle changes to event filter checkboxes
+  const handleEventFilterChange = (eventKey) => {
+    setShowEvents(true);
+    setEventFilters(prev => ({
+      ...prev,
+      [eventKey]: !prev[eventKey]
+    }));
+  };
+
+  // After mounting, we can safely access the theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Load MSCI World Index data
+  useEffect(() => {
+    d3.csv("/chart.csv", d => ({
+      date: d3.timeParse("%m/%Y")(d.Date),
+      value: +d["MSCI World"]
+    })).then(setData);
+  }, []);
+
+  // Update CAGR when data changes - initialize with full range
+  useEffect(() => {
+    if (data.length >= 2) {
+      // Calculate CAGR for full data range initially
+      const fullRangeCagr = calculateCAGR(data);
+      setSelectedPeriodData(fullRangeCagr);
+    }
+  }, [data]);
 
   useEffect(() => {
     if (data.length === 0 || !mounted) return;
@@ -451,6 +491,14 @@ export default function Home() {
 
       const filtered = smoothedData.filter(d => d.date >= x0 && d.date <= x1);
       
+      // Calculate CAGR for selected period
+      if (filtered.length >= 2) {
+        const periodCagr = calculateCAGR(filtered);
+        setSelectedPeriodData(periodCagr);
+      } else {
+        setSelectedPeriodData(null);
+      }
+      
       // Update main chart y-axis
       let newY;
       if (logScale) {
@@ -499,10 +547,14 @@ export default function Home() {
         updateChart(event.selection);
       });
 
+    // Initial brush position - show full data range by default
     const brushGroup = context.append("g")
       .attr("class", "brush")
       .call(brush)
       .call(brush.move, x.range());
+      
+    // Set initial selected period data based on full range
+    setSelectedPeriodData(calculateCAGR(smoothedData));
       
     // Ensure brush stays within bounds
     brushGroup.select(".overlay")
@@ -578,7 +630,15 @@ export default function Home() {
         const firstDataPoint = smoothedData[0];
         const totalReturn = ((d.value - firstDataPoint.value) / firstDataPoint.value) * 100;
         
-        // Format date, value and total return for tooltip
+        // Calculate return if invested at this point until the end
+        const lastDataPoint = smoothedData[smoothedData.length - 1];
+        const futureReturn = ((lastDataPoint.value - d.value) / d.value) * 100;
+        
+        // Calculate years between this point and the end
+        const years = (lastDataPoint.date - d.date) / (1000 * 60 * 60 * 24 * 365.25);
+        const annualizedReturn = years > 0 ? (Math.pow(lastDataPoint.value / d.value, 1 / years) - 1) * 100 : 0;
+        
+        // Format date, value and returns
         const formatDate = d3.timeFormat("%B %Y");
         const formatValue = d3.format(",.2f");
         const formatPercent = d3.format("+,.2f");
@@ -586,7 +646,15 @@ export default function Home() {
         // Build tooltip content
         let tooltipContent = `<strong>Date:</strong> ${formatDate(d.date)}<br>
                              <strong>MSCI:</strong> ${formatValue(d.value)}<br>
-                             <strong>Total Return:</strong> ${formatPercent(totalReturn)}%`;
+                             <strong>Return from start:</strong> ${formatPercent(totalReturn)}%`;
+        
+        // Add future returns if this isn't the last point
+        if (d.date < lastDataPoint.date) {
+          tooltipContent += `<br><strong>Return to present:</strong> ${formatPercent(futureReturn)}%`;
+          if (years >= 1) {
+            tooltipContent += `<br><strong>Annualized:</strong> ${formatPercent(annualizedReturn)}% (${years.toFixed(1)} yrs)`;
+          }
+        }
         
         // Position the tooltip
         tooltip
@@ -606,6 +674,32 @@ export default function Home() {
           .attr("cx", x(d.date))
           .attr("cy", y(d.value));
       });
+
+    // Add a "Reset Zoom" button
+    const resetButton = svg.append("g")
+      .attr("class", "reset-button")
+      .attr("transform", `translate(${margin.left + width - 100}, ${margin.top - 10})`)
+      .style("cursor", "pointer")
+      .on("click", () => {
+        // Reset the brush to show the full range
+        brushGroup.call(brush.move, x2.range());
+      });
+      
+    resetButton.append("rect")
+      .attr("width", 80)
+      .attr("height", 24)
+      .attr("rx", 4)
+      .attr("ry", 4)
+      .attr("fill", isDarkMode ? "#4a5568" : "#e2e8f0")
+      .attr("stroke", isDarkMode ? "#718096" : "#cbd5e0");
+      
+    resetButton.append("text")
+      .attr("x", 40)
+      .attr("y", 16)
+      .attr("text-anchor", "middle")
+      .attr("fill", isDarkMode ? "#e2e8f0" : "#4a5568")
+      .style("font-size", "12px")
+      .text("Reset Zoom");
 
     // Style brush elements
     brushGroup.selectAll(".selection")
@@ -629,6 +723,29 @@ export default function Home() {
         <h2 className="text-xl font-semibold">Tune Out the Noise: How Do World Events Affect the Stock Market?</h2>
         <ThemeSwitch />
       </div>
+      
+      {/* CAGR Information Box - Based on Selected Period */}
+      {selectedPeriodData && (
+        <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/30 dark:border-blue-800 border-blue-200 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-300">CAGR</p>
+              <p className="text-2xl font-bold">{selectedPeriodData.cagr.toFixed(2)}%</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {d3.timeFormat("%b %Y")(selectedPeriodData.startDate)} - {d3.timeFormat("%b %Y")(selectedPeriodData.endDate)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Time Period</p>
+              <p className="text-2xl font-bold">{selectedPeriodData.years.toFixed(1)} years</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Total Return</p>
+              <p className="text-2xl font-bold">{((selectedPeriodData.endValue / selectedPeriodData.startValue - 1) * 100).toFixed(1)}%</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="flex flex-wrap items-center gap-6">
         <div className="flex items-center space-x-2">
@@ -725,9 +842,8 @@ export default function Home() {
         </div>
       </div>
       
-      <div id="chart" ref={chartRef} className="relative mt-6 rounded-lg overflow-hidden dark:bg-gray-800 p-2 transition-colors" />
+      <div id="chart" ref={chartRef} className="relative mt-6 rounded-lg overflow-hidden dark:bg-gray-800 p-2 transition-colors"></div>
       <SocialIconsFooter />
-
     </div>
   );
 }
