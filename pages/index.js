@@ -17,7 +17,6 @@ const MAJOR_EVENTS = {
   SHOW_ONLY_GFC: "showOnlyGFC",
   SHOW_ONLY_COVID: "showOnlyCovid",
   SHOW_ONLY_DOTCOM: "showOnlyDotcom",
-
 };
 
 export default function Home() {
@@ -34,7 +33,6 @@ export default function Home() {
     [MAJOR_EVENTS.SHOW_ONLY_GFC]: false,
     [MAJOR_EVENTS.SHOW_ONLY_COVID]: false,
     [MAJOR_EVENTS.SHOW_ONLY_DOTCOM]: false,
-
   });
   const chartRef = useRef(null);
   const { theme, resolvedTheme } = useTheme();
@@ -445,7 +443,7 @@ export default function Home() {
         { date: "07/1990", label: "Early 90s Recession" },
         { date: "07/1997", label: "Asian Crisis" },
         { date: "09/1998", label: "LTCM Collapse" },
-        { date: "03/2000", label: "Dot-com Bubble Burst", id: "dotcom" },
+        { date: "03/2000", label: "Dotcom Bubble Burst", id: "dotcom" },
         { date: "09/2001", label: "9/11 Attacks" },
         { date: "09/2008", label: "Global Financial Crisis", id: "gfc" },
         { date: "05/2010", label: "Eurozone Crisis" },
@@ -490,11 +488,11 @@ export default function Home() {
             eventFilters[MAJOR_EVENTS.SHOW_ONLY_COVID]
           )
             return true;
-            if (
-              event.id === "dotcom" &&
-              eventFilters[MAJOR_EVENTS.SHOW_ONLY_DOTCOM]
-            )
-              return true;
+          if (
+            event.id === "dotcom" &&
+            eventFilters[MAJOR_EVENTS.SHOW_ONLY_DOTCOM]
+          )
+            return true;
           return false;
         });
       } else {
@@ -811,43 +809,43 @@ export default function Home() {
         <ThemeSwitch />
       </div>
 
-{/* CAGR Information Box using NextUI Card */}
-{selectedPeriodData && (
-  <Card className="mb-4">
-    <CardBody>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <p className="text-sm text-default-500">CAGR</p>
-          <p className="text-2xl font-bold">
-            {selectedPeriodData.cagr.toFixed(2)}%
-          </p>
-          <p className="text-xs text-default-400">
-            {d3.timeFormat("%b %Y")(selectedPeriodData.startDate)} -{" "}
-            {d3.timeFormat("%b %Y")(selectedPeriodData.endDate)}
-          </p>
-        </div>
-        <div>
-          <p className="text-sm text-default-500">
-            Time Period
-          </p>
-          <p className="text-2xl font-bold">
-            {selectedPeriodData.years.toFixed(1)} years
-          </p>
-        </div>
-        <div>
-          <p className="text-sm text-default-500">
-            Total Return
-          </p>
-          <p className="text-2xl font-bold">
-            {(
-              (selectedPeriodData.endValue / selectedPeriodData.startValue - 1) * 100
-            ).toFixed(1)}%
-          </p>
-        </div>
-      </div>
-    </CardBody>
-  </Card>
-)}
+      {/* CAGR Information Box using NextUI Card */}
+      {selectedPeriodData && (
+        <Card className="mb-4">
+          <CardBody>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-default-500">CAGR</p>
+                <p className="text-2xl font-bold">
+                  {selectedPeriodData.cagr.toFixed(2)}%
+                </p>
+                <p className="text-xs text-default-400">
+                  {d3.timeFormat("%b %Y")(selectedPeriodData.startDate)} -{" "}
+                  {d3.timeFormat("%b %Y")(selectedPeriodData.endDate)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-default-500">Time Period</p>
+                <p className="text-2xl font-bold">
+                  {selectedPeriodData.years.toFixed(1)} years
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-default-500">Total Return</p>
+                <p className="text-2xl font-bold">
+                  {(
+                    (selectedPeriodData.endValue /
+                      selectedPeriodData.startValue -
+                      1) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </p>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
       <div className="flex flex-wrap items-center gap-6">
         <div className="flex items-center space-x-2">
           <Switch
@@ -912,6 +910,24 @@ export default function Home() {
 
         <div className="flex items-center space-x-2">
           <Checkbox
+            id="dotcom-crash-checkbox"
+            isSelected={eventFilters[MAJOR_EVENTS.SHOW_ONLY_DOTCOM]}
+            onValueChange={() =>
+              handleEventFilterChange(MAJOR_EVENTS.SHOW_ONLY_DOTCOM)
+            }
+            color="primary"
+            aria-label="Show only Dotcom Bubble Burst"
+          />
+          <label
+            htmlFor="dotcom-crash-checkbox"
+            className="cursor-pointer text-sm"
+          >
+            Dotcom Crash (~2000)
+          </label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
             id="gfc-checkbox"
             isSelected={eventFilters[MAJOR_EVENTS.SHOW_ONLY_GFC]}
             onValueChange={() =>
@@ -942,25 +958,7 @@ export default function Home() {
             COVID Crash (2020)
           </label>
         </div>
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="dotcom-crash-checkbox"
-            isSelected={eventFilters[MAJOR_EVENTS.SHOW_ONLY_DOTCOM]}
-            onValueChange={() =>
-              handleEventFilterChange(MAJOR_EVENTS.SHOW_ONLY_DOTCOM)
-            }
-            color="primary"
-            aria-label="Show only Dotcom Crash"
-          />
-          <label
-            htmlFor="dotcom-crash-checkbox"
-            className="cursor-pointer text-sm"
-          >
-            Dotcom Crash (~2000)
-          </label>
-        </div>
       </div>
-      
 
       <div
         id="chart"
