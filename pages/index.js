@@ -12,6 +12,9 @@ import { ThemeSwitch } from "../components/theme-switch";
 import SocialIconsFooter from "../components/socialfooter";
 import GhostSignup from "../components/GhostSignup";
 
+import { GoogleAnalytics } from '@next/third-parties/google';
+
+
 // Define major events for easy filtering
 const MAJOR_EVENTS = {
   SHOW_ONLY_BLACK_MONDAY: "showOnlyBlackMonday",
@@ -803,6 +806,7 @@ export default function Home() {
 
   return (
     <div className="p-4 space-y-4 dark:text-white transition-colors">
+          <GoogleAnalytics gaId="G-5LGMSPJ2S1" />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">
           Tune Out the Noise: How Do World Events Affect the Stock Market?
@@ -967,10 +971,9 @@ export default function Home() {
         className="relative mt-6 rounded-lg overflow-hidden dark:bg-gray-800 p-2 transition-colors"
       ></div>
 
-      <div className="max-w-2xl mx-auto my-8">
-        <GhostSignup />
-      </div>
-
+<div className="max-w-2xl mx-auto my-8">
+  <GhostSignup />
+</div>
       <SocialIconsFooter />
     </div>
   );
